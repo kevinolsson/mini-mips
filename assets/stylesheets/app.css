@@ -7377,8 +7377,8 @@ table {
   padding-left: 15px;
 }
 /* line 143, ../sass/app.scss */
-.cycle td:nth-child(2), .cycle td:nth-child(2) {
-  font-size: 13px;
+.cycle td:nth-child(2), .cycle td:nth-child(3) {
+  font-size: 12px;
 }
 /* line 146, ../sass/app.scss */
 .cycle td {

@@ -154,49 +154,85 @@
 				<tr>
 					<td class="title">EX</td>
 					<td>EX/MEM.ALU<small>Output</small> =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][8])) { ?>
+						<?php echo $simulate[$i][8]; ?>
+						<?php } ?>
+					</td>
 				</tr> 
 				<tr>
 					<td class="title"></td>
 					<td>EX/MEM.COND =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][9])) { ?>
+						<?php echo $simulate[$i][9]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<tr>
 					<td class="title"></td>
 					<td>EX/MEM.IR =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][10])) { ?>
+						<?php echo $simulate[$i][10]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<tr>
 					<td class="title"></td>
 					<td>EX/MEM.B =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][11])) { ?>
+						<?php echo $simulate[$i][11]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<!-- MEM RELATED -->
 				<tr>
 					<td class="title">MEM</td>
 					<td>MEM/WB.LMD = </td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][12])) { ?>
+						<?php echo $simulate[$i][12]; ?>
+						<?php } ?>
+					</td>
 				</tr> 
 				<tr>
 					<td class="title"></td>
 					<td>Affected Mem =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][13])) { ?>
+						<?php echo $simulate[$i][13]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<tr>
 					<td class="title"></td>
 					<td>MEM/WB.IR =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][14])) { ?>
+						<?php echo $simulate[$i][14]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<tr>
 					<td class="title"></td>
 					<td>MEM/WB.ALU<small>OUTPUT</small> =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][15])) { ?>
+						<?php echo $simulate[$i][15]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 				<!-- WB RELATED -->
 				<tr>
 					<td class="title">WB</td>
 					<td>R<small>N</small> =</td>
-					<td>.</td>
+					<td>
+						<?php if(isset($simulate[$i][16])) { ?>
+						<?php echo $simulate[$i][16]; ?>
+						<?php } ?>
+					</td>
 				</tr>
 			</table>
 		</div>

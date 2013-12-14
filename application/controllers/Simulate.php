@@ -28,6 +28,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Simulate extends CI_Controller {
 
 	var $simulate;
+	
+	// COND register
+	var $COND = 0;
+
+	var $R;
+	var $mem;
 
 	/**
 	 *  COMPARC Machine Project - miniMIPS 
@@ -55,6 +61,35 @@ class Simulate extends CI_Controller {
 			redirect(base_url());
 
 		}
+
+		
+		// Initialize memory
+		// 4096 8191
+
+		// test
+
+
+		for($i=4096;$i<=8191;$i++) {
+			if(!isset($this->mem[$i])) {
+				$this->mem[$i] = dechex(0);
+			}
+		}
+
+		$this->R[0] = dechex(0);
+		$this->R[1] = dechex(1);
+		$this->R[2] = dechex(2);
+		$this->R[5] = dechex(3);
+		$this->mem[hexdec(1000)]=dechex(1);
+		// Initialize the registers
+		for($i=1;$i<=31;$i++) {
+			if(!isset($this->R[$i])){
+				// initialize non touched registers with 0
+				$this->R[$i] = dechex(0);
+			} 
+		}
+
+
+
 
 		$counter = 0;
 		$address = 0;
@@ -418,16 +453,33 @@ class Simulate extends CI_Controller {
 								break;
 							case 'ID':
 								$pipeline[$i][$cycle] = 'EX';
-								'EX '.$i.' '.$cycle.'<br/>';
+								$this->simulate_ex(
+									$cycle,
+									$hex_opcode,
+									$bin_opcode,
+									$type[$i],
+									$i
+								);
 								break;
 							case 'EX':
 								$pipeline[$i][$cycle] = 'MEM';
-								//echo 'MEM '.$i.' '.$cycle.'<br/>';
+								$this->simulate_mem(
+									$cycle,
+									$hex_opcode,
+									$bin_opcode,
+									$type[$i],
+									$i
+								);
 								break;
 							case 'MEM':
 								$pipeline[$i][$cycle] = 'WB';
-								//echo 'WB'.$i.' '.$cycle.'<br/>';
-								// issue complete flag
+								$this->simulate_wb(
+									$cycle,
+									$hex_opcode,
+									$bin_opcode,
+									$type[$i],
+									$i
+								);
 								$complete[$i] = TRUE;
 								//echo $name[$i].' is complete! - '.$i.' '.$cycle.'<br/>';
 								break;
@@ -464,7 +516,7 @@ class Simulate extends CI_Controller {
 									break;
 								case 'WB':
 
-									if($branch['jump']==TRUE) {
+									if($this->COND==1) {
 										// JUMP TO NEW $i
 										// TURN OFF BRANCH 
 										
@@ -566,6 +618,7 @@ class Simulate extends CI_Controller {
 
 			}
 			if($signal==TRUE) {
+				$this->COND = 0;
 				$branch['flag'] = false;
 				$branch['jump'] = false;
 				$branch['new'] = null;
@@ -631,9 +684,6 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_if($cycle,$hex_opcode,$bin_opcode,$i) {
-		//$this->load->vars($global);
-		// Asign to the specific cycle, possible data related to the specific instruction
-		// IF SIMULATES THE FOLLOWING
 		// [0] - IF/ID.IR = the instruction register
 		// [1] - IF/ID.NPC
 		// [2] - PC
@@ -653,20 +703,30 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_id($cycle,$hex_opcode,$bin_opcode,$type,$i){
-		//$this->load->vars($global);
 		// [3] - ID/EX.A => These 2 are a little bit tricky, has to be executed
 		// [4] - ID/EX.B    per instruction type to make sure its correct
 		// [5] - ID/EX.IMM => last 4 digits of HEX opcode with 0 padding
 		// [6] - ID/EX.IR => copy over from IF
 		// [7] - ID.EX.NPC => copy over from IF
-		$this->simulate[$cycle][3] = substr($bin_opcode[$i][1],0, 5);
+		//echo substr($bin_opcode[$i][1],0, 5).'<br/>';
+		$this->simulate[$cycle][3] = substr($bin_opcode[$i][1],0, 5); // This is the register
+		//echo bindec($this->simulate[$cycle][3]).'<br/>';
+		$this->simulate[$cycle][3] = dechex($this->R[bindec($this->simulate[$cycle][3])]);
 		$this->simulate[$cycle][3] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][3])).$this->simulate[$cycle][3];
+
+
 		if($type=='J') {
 			$this->simulate[$cycle][4] = substr($bin_opcode[$i][1],4,5);
+			$this->simulate[$cycle][4] = dechex($this->R[bindec($this->simulate[$cycle][4])]);
 		} else {
-			$this->simulate[$cycle][4] = $bin_opcode[$i][2];
+			$this->simulate[$cycle][4] = $bin_opcode[$i][2]; // This is the register
+			//echo bindec($this->simulate[$cycle][4]).'<br/>';
+			$this->simulate[$cycle][4] = dechex($this->R[bindec($this->simulate[$cycle][4])]);
 		}
 		$this->simulate[$cycle][4] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][4])).$this->simulate[$cycle][4];
+		
+
+
 
 
 		$this->simulate[$cycle][5] = substr($hex_opcode[$i],-4);
@@ -677,7 +737,157 @@ class Simulate extends CI_Controller {
 		$this->simulate[$cycle][7] = ($i*4)+4;
 		$this->simulate[$cycle][7] = dechex($this->simulate[$cycle][7]);
 		$this->simulate[$cycle][7] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][7])).$this->simulate[$cycle][7];
+	}
 
+	public function simulate_ex($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// [8]	-	EX/MEM.ALUoutput
+		// [9]	-	EX/MEM.COND
+		// [10]	-	EX/MEM.IR
+		// [11]	-	EX/MEM.NPC
+
+		//echo $bin_opcode[$i][0].'<br/>';
+		if($bin_opcode[$i][0]=='000100') {
+			//echo "BEQZ<br/>";
+
+			// BEQZ - Jump address
+			$this->simulate[$cycle][8] = dechex(bindec($bin_opcode[$i][3]));
+
+		} else if($bin_opcode[$i][0]=='000010') {
+			//echo "J<br/>";
+
+			// J - Jump address
+			$this->simulate[$cycle][8] = dechex(bindec(substr($bin_opcode[$i][1],10,16)));
+
+		} else if($bin_opcode[$i][0]=='011001'||$bin_opcode[$i][0]=='111111'||$bin_opcode[$i][0]=='101111') {
+			// DADDIU
+			// LD
+			// SD
+
+			$bin_opcode[$i][3] = str_split($bin_opcode[$i][3],4);
+			$bin_opcode[$i][3] = 	bindec($bin_opcode[$i][3][0]).
+									bindec($bin_opcode[$i][3][1]).
+			 						bindec($bin_opcode[$i][3][2]).
+			 						bindec($bin_opcode[$i][3][3]);
+			$this->simulate[$cycle][8] = dechex(bindec($this->simulate[$cycle-1][3]) + bindec(($this->mem[hexdec($bin_opcode[$i][3])])));
+		} else {			
+			switch($bin_opcode[$i][5]) {
+				case '101101':
+				// DADDU - sum of 2 registers
+				$this->simulate[$cycle][8] = 5;
+				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])+hexdec($this->simulate[$cycle-1][4]));
+				break;
+
+				case '101111':
+				// DSUBU - difference of 2 registers
+				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])-hexdec($this->simulate[$cycle-1][4]));
+				break;
+
+				case '100100':
+				// AND - A && B
+				$this->simulate[$cycle][8] = ($this->simulate[$cycle-1][3])&($this->simulate[$cycle-1][4]);
+				break;
+
+				case '100101':
+				$this->simulate[$cycle][8] = ($this->simulate[$cycle-1][3])|($this->simulate[$cycle-1][4]);
+				// OR - A || B
+				break;
+
+				case '000000':
+				// SLT -  1 if A less than B else 0
+				if($this->simulate[$cycle-1][3]<$this->simulate[$cycle-1][4]) {
+					$this->simulate[$cycle][8] = 1;
+				} else {
+					$this->simulate[$cycle][8] = 0;
+				}
+				break;
+			}
+		}
+		$this->simulate[$cycle][8] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][8])).$this->simulate[$cycle][8];
+
+		
+		if($bin_opcode[$i][0]=='000100') {
+			if(bindec($this->simulate[$cycle-1][3])==0) {
+				$this->simulate[$cycle][9] = 1;
+				$this->COND = 1;
+			} else {
+				$this->simulate[$cycle][9] = 0;
+			}
+		} else if($bin_opcode[$i][0]=='000010') {
+			$this->simulate[$cycle][9] = 1;
+				$this->COND = 1;
+		} else {
+			$this->simulate[$cycle][9] = 0;
+		}
+		$this->simulate[$cycle][9] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][9])).$this->simulate[$cycle][9];
+
+
+		$this->simulate[$cycle][10] = $hex_opcode[$i];
+		$this->simulate[$cycle][11] = ($i*4)+4;
+		$this->simulate[$cycle][11] = dechex($this->simulate[$cycle][11]);
+		$this->simulate[$cycle][11] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][11])).$this->simulate[$cycle][11];
 
 	}
+	public function simulate_mem($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// [12] - MEM.WB.LMD
+		// [13] - Range of memory locations affected
+		// [14] - MEM/WB.IR =
+		// [15] - MEM/WB.ALUoutput
+
+		if($bin_opcode[$i][0]=='101111'||$bin_opcode[$i][0]=='111111') {
+			$this->simulate[$cycle][12] = $this->R[hexdec($this->simulate[$cycle-1][8])];
+			$this->simulate[$cycle][12] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][12])).$this->simulate[$cycle][12];
+		} else {
+			$this->simulate[$cycle][12] =  'N/A';
+		}
+
+		$this->simulate[13] = 'N/A';
+
+		$this->simulate[$cycle][14] = $hex_opcode[$i];
+		$this->simulate[$cycle][15] = $this->simulate[$cycle-1][8];
+
+	}
+
+	public function simulate_wb($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// [16] - Rn
+		// if($bin_opcode[$i][0]=='000000') {
+		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle-1][8];
+		// } else if($bin_opcode[$i][0]=='101111') {
+		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle][12];
+		// } else if($bin_opcode[$i][0]=='011001') {
+		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
+		// } else {
+		// 	$this->simulate[$cycle][16] = 'N/A';
+		// }
+		if($bin_opcode[$i][0]=='101111') {
+			// LD
+			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
+
+			// ASSIGN NEW VALUE TO REGISTER
+			$this->R[bindec($bin_opcode[$i][2])] = $this->simulate[$cycle][16];
+
+		} else if($bin_opcode[$i][0]=='000000'||$bin_opcode[$i][0]=='011001') {
+			// DADDIU AND R TYPE
+			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
+		} else {
+			// SD, J, and BEQZ
+			$this->simulate[$cycle][16] = 'N/A';
+		}
+	}
 }
+
+	/**
+	 *  COMPARC Machine Project - miniMIPS 
+	 *	Data Hazard: No Forwarding
+	 *	Control Hazard: Pipeline Flush
+	 *	List of instructions and corresponding opcodes and functions:
+	 *		DADDU	000000	101101
+	 *		DSUBU	000000	101111
+	 *		AND 	000000	100100
+	 *		OR 		000000	100101
+	 *		SLT 	000000	101010
+	 *		BEQZ	000100	N/A
+	 *		LD 		101111 	N/A
+	 *		SD 		111111	N/A
+	 *		DADDIU	011001	N/A
+	 *		J 		000010 	N/A
+	 */
