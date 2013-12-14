@@ -70,7 +70,7 @@
 	</div>
 
 	<div class="row">
-		<?php for($i=0; $i<$cycle; $i++) { ?>
+		<?php $ctr=0; for($i=0; $i<$cycle; $i++) { ?>
 		<div class="large-6 columns">
 			<table class="cycle">
 				<tr>
@@ -236,6 +236,12 @@
 				</tr>
 			</table>
 		</div>
+		<?php $ctr++; } ?>
+		<?php if($ctr%2!=0) { ?>
+				<div class="large-6 columns">
+					<table style="display: none;" class="cycle">
+					</table>
+				</div>
 		<?php } ?>
 	</div>
 </div>
