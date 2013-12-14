@@ -46,7 +46,7 @@ class Simulate extends CI_Controller {
 	 *		OR 		000000	100101
 	 *		SLT 	000000	101010
 	 *		BEQZ	000100	N/A
-	 *		LD 		101111 	N/A
+	 *		LD 		110111 	N/A
 	 *		SD 		111111	N/A
 	 *		DADDIU	011001	N/A
 	 *		J 		000010 	N/A
@@ -70,24 +70,31 @@ class Simulate extends CI_Controller {
 
 		for($i=4096;$i<=8191;$i++) {
 			if(!isset($this->mem[$i])) {
-				$this->mem[$i] = dechex(0);
+				$this->mem[$i] = '00';
 			}
 		}
 
 		//R[0] always 0!
 		$this->R[0] = dechex(0);
-		$this->R[1] = dechex(151350);
-		//$this->R[2] = dechex(2);
+		$this->R[1] = dechex(2);
+		$this->R[2] = '0000000000000008';
 		//$this->R[5] = dechex(3);
 
 
-		//$this->mem[hexdec(1000)]=decbin(1);
+		$this->mem[hexdec(1000)]='AB';
+		$this->mem[hexdec(1001)]='CD';
+		$this->mem[hexdec(1002)]='EF';
+		$this->mem[hexdec(1003)]='11';
+		$this->mem[hexdec(1004)]='22';
+		$this->mem[hexdec(1005)]='33';
+		$this->mem[hexdec(1006)]='44';
+		$this->mem[hexdec(1007)]='52';
 
 		// Initialize the registers
 		for($i=1;$i<=31;$i++) {
 			if(!isset($this->R[$i])){
 				// initialize non touched registers with 0
-				$this->R[$i] = dechex(0);
+				$this->R[$i] = '0000000000000000';
 			} 
 		}
 
@@ -190,7 +197,7 @@ class Simulate extends CI_Controller {
 					$type[$counter] = 'I';
 					break;
 				case 'LD':
-					$opcode[$counter][0] = 47;
+					$opcode[$counter][0] = 55;
 					$type[$counter] = 'I';
 					break;
 				case 'SD':
@@ -727,6 +734,9 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_if($cycle,$hex_opcode,$bin_opcode,$i) {
+		// 100 % SURE THIS IS WORKING
+
+
 		// [0] - IF/ID.IR = the instruction register
 		// [1] - IF/ID.NPC
 		// [2] - PC
@@ -752,6 +762,7 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_id($cycle,$hex_opcode,$bin_opcode,$type,$i){
+		// TESTED ON LD AND SD
 
 		// [3] - ID/EX.A => These 2 are a little bit tricky, has to be executed
 		// [4] - ID/EX.B    per instruction type to make sure its correct
@@ -792,6 +803,9 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_ex($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// TESTED ON LD AND SD
+
+
 		// [8]	-	EX/MEM.ALUoutput
 		// [9]	-	EX/MEM.COND
 		// [10]	-	EX/MEM.IR
@@ -812,7 +826,7 @@ class Simulate extends CI_Controller {
 			// J - Jump address
 			$this->simulate[$cycle][8] = dechex(bindec(substr($bin_opcode[$i][1],10,16)));
 
-		} else if($bin_opcode[$i][0]=='011001'||$bin_opcode[$i][0]=='111111'||$bin_opcode[$i][0]=='101111') {
+		} else if($bin_opcode[$i][0]=='011001'||$bin_opcode[$i][0]=='111111'||$bin_opcode[$i][0]=='110111') {
 			// DADDIU
 			// LD
 			// SD
@@ -822,7 +836,7 @@ class Simulate extends CI_Controller {
 									bindec($bin_opcode[$i][3][1]).
 			 						bindec($bin_opcode[$i][3][2]).
 			 						bindec($bin_opcode[$i][3][3]);
-			$this->simulate[$cycle][8] = $bin_opcode[$i][3] + $bin_opcode[$i][1];
+			$this->simulate[$cycle][8] = dechex(hexdec($this->R[bindec($bin_opcode[$i][1])]) + hexdec(substr("0000000000000000",0,16-strlen($bin_opcode[$i][3])).$bin_opcode[$i][3]));
 			//$this->simulate[$cycle][8] = dechex(bindec($this->simulate[$cycle-1][3]) + bindec(($this->mem[hexdec($bin_opcode[$i][3])])));
 		} else {			
 			switch($bin_opcode[$i][5]) {
@@ -832,7 +846,7 @@ class Simulate extends CI_Controller {
 				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])+hexdec($this->simulate[$cycle-1][4]));
 				break;
 
-				case '101111':
+				case '110111':
 				// DSUBU - difference of 2 registers
 				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])-hexdec($this->simulate[$cycle-1][4]));
 				break;
@@ -878,18 +892,31 @@ class Simulate extends CI_Controller {
 		$this->simulate[$cycle][11] = $this->simulate[$cycle-1][4];
 	}
 	public function simulate_mem($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// TESTED WITH LD AND SD
+
 		// [12] - MEM.WB.LMD
 		// [13] - Range of memory locations affected
 		// [14] - MEM/WB.IR =
 		// [15] - MEM/WB.ALUoutput
 
 
-		if($bin_opcode[$i][0]=='101111') {
-			$this->simulate[$cycle][12] =$this->simulate[$cycle-1][8];
-			$this->simulate[$cycle][12] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][12])).$this->simulate[$cycle][12];
+		if($bin_opcode[$i][0]=='110111') {
+			$bin_opcode[$i][3] = str_split($bin_opcode[$i][3],4);
+			$bin_opcode[$i][3] = 	bindec($bin_opcode[$i][3][0]).
+									bindec($bin_opcode[$i][3][1]).
+			 						bindec($bin_opcode[$i][3][2]).
+			 						bindec($bin_opcode[$i][3][3]);
+
+			for($z=0;$z<8;$z++){
+				$foo[$z] = $this->mem[hexdec($bin_opcode[$i][3])+$z];
+			}
+
+			$this->simulate[$cycle][12] = implode($foo);			
+
 		} else {
 			$this->simulate[$cycle][12] =  'N/A';
 		}
+
 
 		if($bin_opcode[$i][0]=='111111') {
 			// determine starting address
@@ -931,9 +958,8 @@ class Simulate extends CI_Controller {
 			$this->simulate[$cycle]['starting'] =  $starting[$cycle];
 			$this->simulate[$cycle]['ending'] =  $ending[$cycle];
 			$this->simulate[$cycle]['data'] = $foo;
-			
-
-
+		} else {
+			$this->simulate[$cycle][13] = 'N/A';
 		}
 
 		$this->simulate[$cycle][14] = $hex_opcode[$i];
@@ -942,10 +968,12 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_wb($cycle,$hex_opcode,$bin_opcode,$type,$i) {
+		// TESTED WITH LD AND SD
+
 		// [16] - Rn
 		// if($bin_opcode[$i][0]=='000000') {
 		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle-1][8];
-		// } else if($bin_opcode[$i][0]=='101111') {
+		// } else if($bin_opcode[$i][0]=='110111') {
 		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle][12];
 		// } else if($bin_opcode[$i][0]=='011001') {
 		// 	$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
@@ -953,14 +981,14 @@ class Simulate extends CI_Controller {
 		// 	$this->simulate[$cycle][16] = 'N/A';
 		// }
 
-		if($bin_opcode[$i][0]=='101111') {
+		if($bin_opcode[$i][0]=='110111') {
 			// LD
-			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
+			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][12];
 
 			// ASSIGN NEW VALUE TO REGISTER
 			//echo $this->simulate[$cycle][16].'<br/>';
 
-			$this->R[bindec($bin_opcode[$i][2])] = $this->simulate[$cycle][16];
+			$this->R[bindec($bin_opcode[$i][2])] = $this->simulate[$cycle-1][12];
 
 		} else if($bin_opcode[$i][0]=='000000'||$bin_opcode[$i][0]=='011001') {
 			// DADDIU AND R TYPE
@@ -1062,7 +1090,7 @@ class Simulate extends CI_Controller {
 	 *		OR 		000000	100101
 	 *		SLT 	000000	101010
 	 *		BEQZ	000100	N/A
-	 *		LD 		101111 	N/A
+	 *		LD 		110111 	N/A
 	 *		SD 		111111	N/A
 	 *		DADDIU	011001	N/A
 	 *		J 		000010 	N/A
