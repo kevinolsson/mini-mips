@@ -65,9 +65,9 @@
 	color: $red;
 	padding: 10px;
 }
-#command-line {
+.command-line, .command-line2 {
 	margin-top: 20px;
-	height: 350px;
+	height: 370px;
 	border: none;
 	color: $green;
 	padding: 15px;
@@ -80,6 +80,10 @@
 	&:hover,&:focus {
 		background: $dark-grey;
 	}
+}
+
+.command-line2 {
+	font-size: 13px !important;
 }
 
 

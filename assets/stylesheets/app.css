@@ -7292,9 +7292,9 @@ a.th {
 }
 
 /* line 68, ../sass/app.scss */
-#command-line {
+.command-line, .command-line2 {
   margin-top: 20px;
-  height: 350px;
+  height: 370px;
   border: none;
   color: #3bef76;
   padding: 15px;
@@ -7305,11 +7305,16 @@ a.th {
   border-top: 10px solid #b1b1b1;
 }
 /* line 80, ../sass/app.scss */
-#command-line:hover, #command-line:focus {
+.command-line:hover, .command-line:focus, .command-line2:hover, .command-line2:focus {
   background: #313131;
 }
 
-/* line 86, ../sass/app.scss */
+/* line 85, ../sass/app.scss */
+.command-line2 {
+  font-size: 13px !important;
+}
+
+/* line 90, ../sass/app.scss */
 .simulate, .back {
   width: 200px;
   height: 60px;
@@ -7320,72 +7325,72 @@ a.th {
   font-size: 25px !important;
   text-transform: uppercase;
 }
-/* line 96, ../sass/app.scss */
+/* line 100, ../sass/app.scss */
 .simulate:hover, .back:hover {
   background: #23ed66;
 }
 
-/* line 101, ../sass/app.scss */
+/* line 105, ../sass/app.scss */
 .back {
   line-height: 55px;
   display: inline-block;
   text-align: center;
   margin-top: 5px;
 }
-/* line 107, ../sass/app.scss */
+/* line 111, ../sass/app.scss */
 .back:hover {
   color: #fff;
   background: #23ed66;
 }
 
-/* line 113, ../sass/app.scss */
+/* line 117, ../sass/app.scss */
 table {
   width: 100%;
   margin-top: 20px;
 }
 
-/* line 118, ../sass/app.scss */
+/* line 122, ../sass/app.scss */
 .opcodes, .cycle {
   text-transform: uppercase;
 }
-/* line 120, ../sass/app.scss */
+/* line 124, ../sass/app.scss */
 .opcodes th, .cycle th {
   text-align: left;
 }
 
-/* line 125, ../sass/app.scss */
+/* line 129, ../sass/app.scss */
 .pipeline {
   text-transform: uppercase;
   font-size: 11px;
 }
-/* line 128, ../sass/app.scss */
+/* line 132, ../sass/app.scss */
 .pipeline th, .pipeline td {
   text-align: left;
 }
-/* line 131, ../sass/app.scss */
+/* line 135, ../sass/app.scss */
 .pipeline a {
   color: #313131;
 }
 
-/* line 136, ../sass/app.scss */
+/* line 140, ../sass/app.scss */
 .cycle {
   text-transform: uppercase;
 }
-/* line 138, ../sass/app.scss */
+/* line 142, ../sass/app.scss */
 .cycle .title {
   width: 20px;
   padding-left: 15px;
 }
-/* line 143, ../sass/app.scss */
+/* line 147, ../sass/app.scss */
 .cycle td:nth-child(2), .cycle td:nth-child(3) {
   font-size: 12px;
 }
-/* line 146, ../sass/app.scss */
+/* line 150, ../sass/app.scss */
 .cycle td {
   height: 30px;
 }
 
-/* line 151, ../sass/app.scss */
+/* line 155, ../sass/app.scss */
 .opcodes, .pipeline, .cycle {
   border-bottom: 5px solid #d7d7d7;
   border-collapse: separate !important;

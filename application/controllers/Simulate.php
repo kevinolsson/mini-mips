@@ -40,16 +40,16 @@ class Simulate extends CI_Controller {
 	 *	Data Hazard: No Forwarding
 	 *	Control Hazard: Pipeline Flush
 	 *	List of instructions and corresponding opcodes and functions:
-	 *		DADDU	000000	101101
-	 *		DSUBU	000000	101111
-	 *		AND 	000000	100100
-	 *		OR 		000000	100101
-	 *		SLT 	000000	101010
-	 *		BEQZ	000100	N/A
-	 *		LD 		110111 	N/A
-	 *		SD 		111111	N/A
-	 *		DADDIU	011001	N/A
-	 *		J 		000010 	N/A
+	 *		DADDU	000000	101101 // CHECKED
+	 *		DSUBU	000000	101111 // CHECKED
+	 *		AND 	000000	100100 // CHECKED
+	 *		OR 		000000	100101 // CHCECKED
+	 *		SLT 	000000	101010 // CHECKED
+	 *		BEQZ	000100	N/A // CHECKED
+	 *		LD 		110111 	N/A // CHECKED
+	 *		SD 		111111	N/A // CHECKED
+	 *		DADDIU	011001	N/A // CHECKED
+	 *		J 		000010 	N/A // CHECKED
 	 */
 	public function index()
 	{
@@ -62,11 +62,8 @@ class Simulate extends CI_Controller {
 
 		}
 
-		// Initialize memory
-		// 4096 8191
 
-		// test
-
+		// MEMORY AND REGISTER INITIALIZATION
 
 		for($i=4096;$i<=8191;$i++) {
 			if(!isset($this->mem[$i])) {
@@ -74,38 +71,69 @@ class Simulate extends CI_Controller {
 			}
 		}
 
-		//R[0] always 0!
-		$this->R[0] = dechex(0);
-		$this->R[1] = dechex(2);
-		$this->R[2] = '0000000000000008';
-		//$this->R[5] = dechex(3);
+		// $this->R[0] = dechex(0);
+		// $this->R[1] = dechex(2);
+		// $this->R[2] = '0000000000000008';
+		// $this->R[3] = dechex(4);
 
-
-		$this->mem[hexdec(1000)]='AB';
-		$this->mem[hexdec(1001)]='CD';
-		$this->mem[hexdec(1002)]='EF';
-		$this->mem[hexdec(1003)]='11';
-		$this->mem[hexdec(1004)]='22';
-		$this->mem[hexdec(1005)]='33';
-		$this->mem[hexdec(1006)]='44';
-		$this->mem[hexdec(1007)]='52';
+		// $this->mem[hexdec(1000)]='AB';
+		// $this->mem[hexdec(1001)]='CD';
+		// $this->mem[hexdec(1002)]='EF';
+		// $this->mem[hexdec(1003)]='11';
+		// $this->mem[hexdec(1004)]='22';
+		// $this->mem[hexdec(1005)]='33';
+		// $this->mem[hexdec(1006)]='44';
+		// $this->mem[hexdec(1007)]='52';
 
 		// Initialize the registers
-		for($i=1;$i<=31;$i++) {
+		for($i=0;$i<=31;$i++) {
 			if(!isset($this->R[$i])){
 				// initialize non touched registers with 0
 				$this->R[$i] = '0000000000000000';
 			} 
 		}
 
+		$init = trim($_POST['init']);
+		$init = explode(';',$init);
 
-		//echo '<br/>R5 is '.$this->R[5].'<br/><br/>';
+		// TAKE OUT COMMENTS
+		$ctr = 0;
+		foreach($init as $result) {
+			if (strpos($result, '##') !== FALSE)
+			{
+				//echo "HELLO!";
+				// do nothing
+			} else {
+				$init[$ctr] = $result;
+				$ctr++;
+			}
 
+		}
+		foreach($init as $result) {
+			trim($result);
+			if(substr($result,2,1)=='R') {
+				$result=preg_replace('/\s+/', '',  $result);
+				$result=explode(':',$result);
 
+				// ASSIGN TO REGISTER VARIABLE
+				$this->R[substr($result[0],1)] = $result[1];
+				//echo $this->R[substr($result[0],1)];
+				// THE R VALUE (GOOD FOR ERROR CHECKING)
+				//echo substr($result[0],0,1);
+
+			} else if(substr($result,2,2)=='0X'||substr($result,2,2)=='0x') {
+				//$result=preg_replace('/\s+/', '',  $result);
+				$result=substr($result,4);
+				$result = explode(' ',$result);
+
+				// ASSIGN TO MEMORY
+				$this->mem[hexdec($result[0])] = $result[1];
+				//echo $this->mem[hexdec($result[0])].'<br/>';
+			}
+		}
 
 		$counter = 0;
 		$address = 0;
-
 		$branch = null;// this is true, since all memory starts at 0
 
 		// Trim last ; from instructions
@@ -308,7 +336,8 @@ class Simulate extends CI_Controller {
 
 							case 2:
 								//immediate of DADDIU
-								$opcode[$counter][3] = $parameter;
+
+								$opcode[$counter][3] = substr($parameter, 1);
 								
 						}
 					}
@@ -692,6 +721,8 @@ class Simulate extends CI_Controller {
 		}
 		*/
 
+		//echo $this->R[1];
+
 		// Push data to view
 		$data['bin_opcode'] = $bin_opcode;
 		$data['hex_opcode'] = $hex_opcode;
@@ -762,7 +793,7 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_id($cycle,$hex_opcode,$bin_opcode,$type,$i){
-		// TESTED ON LD AND SD
+		// TESTED ON LD,SD,DADDIU
 
 		// [3] - ID/EX.A => These 2 are a little bit tricky, has to be executed
 		// [4] - ID/EX.B    per instruction type to make sure its correct
@@ -803,7 +834,7 @@ class Simulate extends CI_Controller {
 	}
 
 	public function simulate_ex($cycle,$hex_opcode,$bin_opcode,$type,$i) {
-		// TESTED ON LD AND SD
+		// TESTED ON LD, SD and DADDIU
 
 
 		// [8]	-	EX/MEM.ALUoutput
@@ -846,7 +877,7 @@ class Simulate extends CI_Controller {
 				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])+hexdec($this->simulate[$cycle-1][4]));
 				break;
 
-				case '110111':
+				case '101111':
 				// DSUBU - difference of 2 registers
 				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])-hexdec($this->simulate[$cycle-1][4]));
 				break;
@@ -861,7 +892,7 @@ class Simulate extends CI_Controller {
 				// OR - A || B
 				break;
 
-				case '000000':
+				case '101010':
 				// SLT -  1 if A less than B else 0
 				if($this->simulate[$cycle-1][3]<$this->simulate[$cycle-1][4]) {
 					$this->simulate[$cycle][8] = 1;

@@ -12,21 +12,38 @@
 		</div>
 		<?php } ?>
 
-		<div class="large-12 columns">
-			<?php
-			 	echo form_open('simulate/');
+		<?php	echo form_open('simulate/'); ?>
+		<div class="row">
+			<div class="large-8 columns left">
+				<?php
 				echo form_textarea(
 					array('
 						name'=>'instructions',
-						'id'=>'command-line',
+						'class'=>'command-line',
 						'spellcheck' => 'false',
 						'value' =>
-						'BEQZ R5, L1;&#13;&#10;SD R3, 1008(R0);&#13;&#10;DADDIU R2,R3, 1000;&#13;&#10;OR R5,R2,R6;&#13;&#10;AND R7,R1,R3;&#13;&#10;L1: SD R2, 1005(R1);&#13;&#10;DADDU R2,R1,R1;'
+						'LD R1, 1000(R2);&#13;&#10;SD R1, 1000(R2);'
 						)
 					);
-			 	echo form_submit(array('class'=>'simulate','value'=>'Simulate!')); 
-				echo form_close();
-			?>
+					 ?>
+			</div>
 
+			<div class="large-4 columns left">
+			<?php echo form_textarea(
+				array('
+					name'=>'init',
+					'class'=>'command-line2',
+					'spellcheck' => 'false',
+					'value'=>'## INITIALIZE REGISTERS ##;&#13;&#10;R1: 0000000000000002;&#13;&#10;R2: 0000000000000008;&#13;&#10;R3: 0000000000000004;&#13;&#10;R4: 0000000000000005;&#13;&#10;R5: 0000000000000008;&#13;&#10;R6: 0000000000000001;&#13;&#10;R7: 0000000000000000;&#13;&#10;R8: 0000000000000004;&#13;&#10;&#13;&#10;## INITIALIZE MEMORY ##;&#13;&#10;0X1000 AB;&#13;&#10;0X1001 CD;&#13;&#10;0X1002 EF;&#13;&#10;0X1003 11;&#13;&#10;0X1004 22;&#13;&#10;0X1005 33;&#13;&#10;0X1006 44;&#13;&#10;0X1007 52;'
+					)
+					); ?>
+			</div>
 		</div>
+		<div class="row">
+			<div class="large-12 columns">
+				<?php echo form_submit(array('class'=>'simulate','value'=>'Simulate!')); ?>
+			</div>
+		</div>
+
+		<?php echo form_close(); ?>
 	</div>
