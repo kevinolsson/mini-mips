@@ -75,11 +75,15 @@ class Simulate extends CI_Controller {
 			}
 		}
 
+		//R[0] always 0!
 		$this->R[0] = dechex(0);
 		$this->R[1] = dechex(1);
-		$this->R[2] = dechex(2);
-		$this->R[5] = dechex(3);
-		$this->mem[hexdec(1000)]=dechex(1);
+		//$this->R[2] = dechex(2);
+		//$this->R[5] = dechex(3);
+
+
+		$this->mem[hexdec(1000)]=decbin(1);
+
 		// Initialize the registers
 		for($i=1;$i<=31;$i++) {
 			if(!isset($this->R[$i])){
@@ -89,7 +93,7 @@ class Simulate extends CI_Controller {
 		}
 
 
-
+		//echo '<br/>R5 is '.$this->R[5].'<br/><br/>';
 
 		$counter = 0;
 		$address = 0;
@@ -522,20 +526,40 @@ class Simulate extends CI_Controller {
 										
 
 										// determine what the new $i is based of $branch['new']
-										$new = ($i - $branch['i'])+$branch['new'];
+										if($branch['i']==0){
+											$new = ($i - $branch['i'])+$branch['new'];
+										} else {
+											$new = ($i - $branch['i'])+$branch['new']+1;
+										}	
+										
 										while($i!=$new) {
 											$complete[$i] = TRUE;
 											$i++;
 										}
 										$i = $new;
-										$pipeline[$i][$cycle] = 'IF';
-										// Simulate IF
-										$this->simulate_if(
-											$cycle,
-											$hex_opcode,
-											$bin_opcode,
-											$i
-									);	
+
+										if(isset($pipeline[$i][$cycle-1])&&$pipeline[$i][$cycle-1]=='IF') {
+											$pipeline[$i][$cycle] = 'ID';
+											// Simulate ID
+											$this->simulate_id(
+												$cycle,
+												$hex_opcode,
+												$bin_opcode,
+												$type[$i],
+												$i
+											);
+										} else {
+											$pipeline[$i][$cycle] = 'IF';
+											// Simulate IF
+											$this->simulate_if(
+												$cycle,
+												$hex_opcode,
+												$bin_opcode,
+												$i
+											);	
+										}
+
+
 
 									} else {
 										// If we are not going to jump
@@ -709,24 +733,26 @@ class Simulate extends CI_Controller {
 		// [6] - ID/EX.IR => copy over from IF
 		// [7] - ID.EX.NPC => copy over from IF
 		//echo substr($bin_opcode[$i][1],0, 5).'<br/>';
+
 		$this->simulate[$cycle][3] = substr($bin_opcode[$i][1],0, 5); // This is the register
 		//echo bindec($this->simulate[$cycle][3]).'<br/>';
-		$this->simulate[$cycle][3] = dechex($this->R[bindec($this->simulate[$cycle][3])]);
+		$this->simulate[$cycle][3] = ($this->R[bindec($this->simulate[$cycle][3])]);
 		$this->simulate[$cycle][3] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][3])).$this->simulate[$cycle][3];
 
 
 		if($type=='J') {
 			$this->simulate[$cycle][4] = substr($bin_opcode[$i][1],4,5);
-			$this->simulate[$cycle][4] = dechex($this->R[bindec($this->simulate[$cycle][4])]);
+			$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
 		} else {
 			$this->simulate[$cycle][4] = $bin_opcode[$i][2]; // This is the register
 			//echo bindec($this->simulate[$cycle][4]).'<br/>';
-			$this->simulate[$cycle][4] = dechex($this->R[bindec($this->simulate[$cycle][4])]);
+			$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
+			//echo $this->R[5];
 		}
 		$this->simulate[$cycle][4] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][4])).$this->simulate[$cycle][4];
 		
 
-
+		//echo ($cycle+1).' - A:'.$this->simulate[$cycle][3].' | B:'.$this->simulate[$cycle][4].'<br/>';
 
 
 		$this->simulate[$cycle][5] = substr($hex_opcode[$i],-4);
@@ -863,15 +889,31 @@ class Simulate extends CI_Controller {
 			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
 
 			// ASSIGN NEW VALUE TO REGISTER
+			//echo $this->simulate[$cycle][16].'<br/>';
+
 			$this->R[bindec($bin_opcode[$i][2])] = $this->simulate[$cycle][16];
 
 		} else if($bin_opcode[$i][0]=='000000'||$bin_opcode[$i][0]=='011001') {
 			// DADDIU AND R TYPE
+
 			$this->simulate[$cycle][16] = $this->simulate[$cycle-1][15];
+			//echo $this->simulate[$cycle][16].'<br/>';
+			// ASSIGN NEW VALUE TO REGISTER
+			$this->R[bindec($bin_opcode[$i][3])] = $this->simulate[$cycle][16];
 		} else {
 			// SD, J, and BEQZ
 			$this->simulate[$cycle][16] = 'N/A';
+			if($bin_opcode[$i][0]=='111111'){
+				
+				// STORE TO MEMORY
+
+
+
+			}
 		}
+
+
+
 	}
 }
 
