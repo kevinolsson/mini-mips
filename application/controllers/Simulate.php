@@ -34,6 +34,7 @@ class Simulate extends CI_Controller {
 
 	var $R;
 	var $mem;
+	var $dependency;
 
 	/**
 	 *  COMPARC Machine Project - miniMIPS 
@@ -61,6 +62,12 @@ class Simulate extends CI_Controller {
 			redirect(base_url());
 
 		}
+
+		// $this->R[] - GLOBAL REGISTER FOR INSIDE
+		// $this->mem[] - GLOBAL MEMORY FOR INSIDE
+
+		// $xR[$cycle][] - Local register to be used for output
+		// $xMEM[$cycle][] - Local memory used for output
 
 
 		// MEMORY AND REGISTER INITIALIZATION
@@ -117,6 +124,7 @@ class Simulate extends CI_Controller {
 
 				// ASSIGN TO REGISTER VARIABLE
 				$this->R[substr($result[0],1)] = $result[1];
+				$this->R['mod'][substr($result[0],1)] = TRUE; 
 				//echo $this->R[substr($result[0],1)];
 				// THE R VALUE (GOOD FOR ERROR CHECKING)
 				//echo substr($result[0],0,1);
@@ -128,7 +136,24 @@ class Simulate extends CI_Controller {
 
 				// ASSIGN TO MEMORY
 				$this->mem[hexdec($result[0])] = $result[1];
+				$this->mem['mod'][hexdec($result[0])] = TRUE;
 				//echo $this->mem[hexdec($result[0])].'<br/>';
+			}
+		}
+
+		// PUT INTO $xR[-1] and $xMEM[-1] the MODIFIED memory and registers before exeuction
+		for($i=0;$i<=31;$i++) {
+			if(isset($this->R['mod'][$i])&&($this->R['mod'][$i]==TRUE)){
+				$xR[-1][$i] = $this->R[$i];
+				//echo 'R'.$i.': '.$xR[-1][$i].'<br/>';
+				//$xR['mod'][-1] = TRUE;
+			} 
+		}
+		for($i=4096;$i<=8191;$i++) {
+			if(isset($this->mem['mod'][$i])&&($this->mem['mod'][$i]==TRUE)) {
+				$xMEM[-1][$i] = $this->mem[$i];
+				//echo '0x'.dechex($i).': '.$xMEM[-1][$i].'<br/>';
+				//$xMEM['mod'][-1] = TRUE;
 			}
 		}
 
@@ -468,10 +493,15 @@ class Simulate extends CI_Controller {
 		}
 
 
-		// ACTUA EXECUTION WHILE DRAWING THE MAP
+		// ACTUAL EXECUTION WHILE DRAWING THE MAP
+
+
+		// My last pipeline map was wrong, so here is take two.
 		$cycle=0;
 		$FIN = false;
 		$signal = false;
+		// keep executing until the last instruction is complete
+
 		while(!isset($complete[$counter-1])) { // While last instruction not complete
 			for($i=0;$i<$counter;$i++) {
 				//echo $i.' '.$cycle.'<br/>';
@@ -481,16 +511,17 @@ class Simulate extends CI_Controller {
 							// Insert next instruction
 							// CALL EXECUTION HERE LATER ON!;
 							case 'IF':
-								$pipeline[$i][$cycle] = 'ID';
-								// Simulate ID
-								$this->simulate_id(
-									$cycle,
-									$hex_opcode,
-									$bin_opcode,
-									$type[$i],
-									$i
-								);
-
+								if($this->dependency[$i]==FALSE) {
+									$pipeline[$i][$cycle] = 'ID';
+									// Simulate ID
+									$this->simulate_id(
+										$cycle,
+										$hex_opcode,
+										$bin_opcode,
+										$type[$i],
+										$i
+									);
+								}
 								break;
 							case 'ID':
 								$pipeline[$i][$cycle] = 'EX';
@@ -522,7 +553,7 @@ class Simulate extends CI_Controller {
 									$i
 								);
 								$complete[$i] = TRUE;
-								//echo $name[$i].' is complete! - '.$i.' '.$cycle.'<br/>';
+								$this->dependency[$i+1] = FALSE;								//echo $name[$i].' is complete! - '.$i.' '.$cycle.'<br/>';
 								break;
 							case 'WB':
 								break;
@@ -547,6 +578,7 @@ class Simulate extends CI_Controller {
 										$cycle,
 										$hex_opcode,
 										$bin_opcode,
+										$type,
 										$i
 									);
 									break;
@@ -601,6 +633,7 @@ class Simulate extends CI_Controller {
 												$cycle,
 												$hex_opcode,
 												$bin_opcode,
+												$type,
 												$i
 											);	
 										}
@@ -615,6 +648,7 @@ class Simulate extends CI_Controller {
 											$cycle,
 											$hex_opcode,
 											$bin_opcode,
+											$type,
 											$i
 										);
 									}
@@ -625,7 +659,21 @@ class Simulate extends CI_Controller {
 							}
 						} else {
 						// If BRANCH is false
-						$FIN = TRUE;
+							if($pipeline[$i-1][$cycle]=='ID'){
+								$pipeline[$i][$cycle] = 'IF';
+								if($branch['flag']==FALSE) {
+									// check for branch
+									$branch = $this->ifbranch($opcode,$bin_opcode,$i);
+								}
+									// Simulate IF
+									$this->simulate_if(
+										$cycle,
+										$hex_opcode,
+										$bin_opcode,
+										$type,
+										$i
+									);
+							}
 						}
 					} else { // pipeline on top does not exist
 						if($branch['flag']==TRUE) {
@@ -642,8 +690,10 @@ class Simulate extends CI_Controller {
 										$cycle,
 										$hex_opcode,
 										$bin_opcode,
+										$type,
 										$i
 									);
+
 							}
 						} else {
 							if($FIN==TRUE) {
@@ -662,20 +712,18 @@ class Simulate extends CI_Controller {
 										$cycle,
 										$hex_opcode,
 										$bin_opcode,
+										$type,
 										$i
 									);
 								}
-								if(isset($complete[$i-1])&&!isset($complete[$i])) {
-									$pipeline[$i][$cycle] = 'IF';
-									if($branch['flag']==FALSE) {
-										// check for branch
-										$branch = $this->ifbranch($opcode,$bin_opcode,$i);
-									}
-									// Simulate IF
-									$this->simulate_if(
+								if(!isset($complete[$i])&&isset($complete[$i-1])&&($complete[$i-1]==TRUE)&&$this->dependency[$i]==FALSE) {
+									$pipeline[$i][$cycle] = 'ID';
+									// Simulate ID
+									$this->simulate_id(
 										$cycle,
 										$hex_opcode,
 										$bin_opcode,
+										$type[$i],
 										$i
 									);
 								}
@@ -688,6 +736,20 @@ class Simulate extends CI_Controller {
 			}
 
 
+
+			// PUT INTO $xR[-1] and $xMEM[-1] the MODIFIED memory and registers PER CYCLE DURING EXECUTION exeuction
+			for($i=0;$i<=31;$i++) {
+				if(isset($this->R['mod'][$i])&&($this->R['mod'][$i]==TRUE)){
+					$xR[$cycle+1][$i] = $this->R[$i];
+					//echo 'R'.$i.': '.$xR[$cycle+1][$i].'<br/>';
+				} 
+			}
+			for($i=4096;$i<=8191;$i++) {
+				if(isset($this->mem['mod'][$i])&&($this->mem['mod'][$i]==TRUE)) {
+					$xMEM[$cycle+1][$i] = $this->mem[$i];
+					//echo '0x'.dechex($i).': '.$xMEM[$cycle+1][$i].'<br/>';
+				}
+			}
 
 			if($signal==TRUE) {
 				$this->COND = 0;
@@ -711,7 +773,7 @@ class Simulate extends CI_Controller {
 				$index++;
 			}
 		}
-
+		
 /*
 		// BRUTE FORCE BUGFIX HUEHUE
 		if($this->simulate[13][0][0]=='N') {
@@ -723,6 +785,20 @@ class Simulate extends CI_Controller {
 
 		//echo $this->R[1];
 
+		// PUT INTO $xR[-1] and $xMEM[-1] the MODIFIED memory and registers AFTER exeuction
+		for($i=0;$i<=31;$i++) {
+			if(isset($this->R['mod'][$i])&&($this->R['mod'][$i]==TRUE)){
+				$xR[$cycle+1][$i] = $this->R[$i];
+				//echo 'R'.$i.': '.$xR[$cycle+1][$i].'<br/>';
+			} 
+		}
+		for($i=4096;$i<=8191;$i++) {
+			if(isset($this->mem['mod'][$i])&&($this->mem['mod'][$i]==TRUE)) {
+				$xMEM[$cycle+1][$i] = $this->mem[$i];
+				//echo '0x'.dechex($i).': '.$xMEM[$cycle+1][$i].'<br/>';
+			}
+		}
+
 		// Push data to view
 		$data['bin_opcode'] = $bin_opcode;
 		$data['hex_opcode'] = $hex_opcode;
@@ -732,6 +808,8 @@ class Simulate extends CI_Controller {
 		$data['type'] = $type;
 		$data['pipeline'] = $pipeline;
 		$data['simulate'] = $this->simulate;
+		$data['registers'] = $xR;
+		$data['memory'] = $xMEM;
 
 
 		$this->load->view('shared/header');
@@ -764,7 +842,7 @@ class Simulate extends CI_Controller {
 		return $branch;
 	}
 
-	public function simulate_if($cycle,$hex_opcode,$bin_opcode,$i) {
+	public function simulate_if($cycle,$hex_opcode,$bin_opcode,$type,$i) {
 		// 100 % SURE THIS IS WORKING
 
 
@@ -790,9 +868,80 @@ class Simulate extends CI_Controller {
 		$this->simulate[$cycle][1] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][1])).$this->simulate[$cycle][1];
 
 		$this->simulate[$cycle][2] = $this->simulate[$cycle][1];
+	
+
+		// CHECK IF THIS INSTRUCTION HAS DEPDENCY
+
+		if($i==0) {
+			$this->dependency[$i] == FALSE; // FIRST INSTRUCTION never has dependencies
+		} else {
+			if($type[$i]=='R') {
+				if($type[$i-1]=='R') {
+					if(bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][3])||bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][3])) {
+						$this->dependency[$i] = TRUE;
+					} else {
+						$this->dependency[$i] = FALSE;
+					}
+				} else {
+					if(bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][2])||bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][2])) {
+						$this->dependency[$i] = TRUE;
+					} else {
+						$this->dependency[$i] = FALSE;
+					}
+				}
+			} else {
+
+				if($type[$i-1]=='R') {
+					if(bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][3])||bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][3])) {
+						$this->dependency[$i] = TRUE;
+					} else {
+						$this->dependency[$i] = FALSE;
+					}
+				} else {
+					if(bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][2])||bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][2])) {
+						$this->dependency[$i] = TRUE;
+					} else {
+						$this->dependency[$i] = FALSE;
+					}
+				}
+
+			}
+		}
 	}
 
 	public function simulate_id($cycle,$hex_opcode,$bin_opcode,$type,$i){
+
+
+			$this->simulate[$cycle][3] = substr($bin_opcode[$i][1],0, 5); // This is the register
+			//echo bindec($this->simulate[$cycle][3]).'<br/>';
+			$this->simulate[$cycle][3] = ($this->R[bindec($this->simulate[$cycle][3])]);
+			$this->simulate[$cycle][3] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][3])).$this->simulate[$cycle][3];
+
+
+			if($type=='J') {
+				$this->simulate[$cycle][4] = substr($bin_opcode[$i][1],4,5);
+				$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
+			} else {
+				$this->simulate[$cycle][4] = $bin_opcode[$i][2]; // This is the register
+				//echo bindec($this->simulate[$cycle][4]).'<br/>';
+				$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
+				//echo $this->R[5];
+			}
+			$this->simulate[$cycle][4] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][4])).$this->simulate[$cycle][4];
+			
+
+			//echo ($cycle+1).' - A:'.$this->simulate[$cycle][3].' | B:'.$this->simulate[$cycle][4].'<br/>';
+
+
+			$this->simulate[$cycle][5] = substr($hex_opcode[$i],-4);
+			$this->simulate[$cycle][5] = substr("00000000",0,8-strlen($this->simulate[$cycle][5])).$this->simulate[$cycle][5];
+
+			$this->simulate[$cycle][6] = $hex_opcode[$i];
+
+			$this->simulate[$cycle][7] = ($i*4)+4;
+			$this->simulate[$cycle][7] = dechex($this->simulate[$cycle][7]);
+			$this->simulate[$cycle][7] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][7])).$this->simulate[$cycle][7];
+
 		// TESTED ON LD,SD,DADDIU
 
 		// [3] - ID/EX.A => These 2 are a little bit tricky, has to be executed
@@ -802,35 +951,7 @@ class Simulate extends CI_Controller {
 		// [7] - ID.EX.NPC => copy over from IF
 		//echo substr($bin_opcode[$i][1],0, 5).'<br/>';
 
-		$this->simulate[$cycle][3] = substr($bin_opcode[$i][1],0, 5); // This is the register
-		//echo bindec($this->simulate[$cycle][3]).'<br/>';
-		$this->simulate[$cycle][3] = ($this->R[bindec($this->simulate[$cycle][3])]);
-		$this->simulate[$cycle][3] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][3])).$this->simulate[$cycle][3];
 
-
-		if($type=='J') {
-			$this->simulate[$cycle][4] = substr($bin_opcode[$i][1],4,5);
-			$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
-		} else {
-			$this->simulate[$cycle][4] = $bin_opcode[$i][2]; // This is the register
-			//echo bindec($this->simulate[$cycle][4]).'<br/>';
-			$this->simulate[$cycle][4] = ($this->R[bindec($this->simulate[$cycle][4])]);
-			//echo $this->R[5];
-		}
-		$this->simulate[$cycle][4] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][4])).$this->simulate[$cycle][4];
-		
-
-		//echo ($cycle+1).' - A:'.$this->simulate[$cycle][3].' | B:'.$this->simulate[$cycle][4].'<br/>';
-
-
-		$this->simulate[$cycle][5] = substr($hex_opcode[$i],-4);
-		$this->simulate[$cycle][5] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][5])).$this->simulate[$cycle][5];
-
-		$this->simulate[$cycle][6] = $hex_opcode[$i];
-
-		$this->simulate[$cycle][7] = ($i*4)+4;
-		$this->simulate[$cycle][7] = dechex($this->simulate[$cycle][7]);
-		$this->simulate[$cycle][7] = substr("0000000000000000",0,16-strlen($this->simulate[$cycle][7])).$this->simulate[$cycle][7];
 	}
 
 	public function simulate_ex($cycle,$hex_opcode,$bin_opcode,$type,$i) {
@@ -879,7 +1000,11 @@ class Simulate extends CI_Controller {
 
 				case '101111':
 				// DSUBU - difference of 2 registers
-				$this->simulate[$cycle][8] = dechex(hexdec($this->simulate[$cycle-1][3])-hexdec($this->simulate[$cycle-1][4]));
+
+				// sometimes stuff is too big to subtract.
+				// #daya just subtract from the last 8 digits
+
+				$this->simulate[$cycle][8] = substr($this->simulate[$cycle-1][3],0,8).dechex(hexdec(substr($this->simulate[$cycle-1][3],8))-hexdec($this->simulate[$cycle-1][4]));
 				break;
 
 				case '100100':
@@ -932,14 +1057,12 @@ class Simulate extends CI_Controller {
 
 
 		if($bin_opcode[$i][0]=='110111') {
-			$bin_opcode[$i][3] = str_split($bin_opcode[$i][3],4);
-			$bin_opcode[$i][3] = 	bindec($bin_opcode[$i][3][0]).
-									bindec($bin_opcode[$i][3][1]).
-			 						bindec($bin_opcode[$i][3][2]).
-			 						bindec($bin_opcode[$i][3][3]);
+
 
 			for($z=0;$z<8;$z++){
-				$foo[$z] = $this->mem[hexdec($bin_opcode[$i][3])+$z];
+				//echo substr($this->simulate[$cycle-1][8],-4)+$z.'<br/>';
+				$foo[$z] = $this->mem[hexdec(substr($this->simulate[$cycle-1][8],-4))+$z];
+
 			}
 
 			$this->simulate[$cycle][12] = implode($foo);			
@@ -1020,6 +1143,7 @@ class Simulate extends CI_Controller {
 			//echo $this->simulate[$cycle][16].'<br/>';
 
 			$this->R[bindec($bin_opcode[$i][2])] = $this->simulate[$cycle-1][12];
+			$this->R['mod'][bindec($bin_opcode[$i][2])] = TRUE;
 
 		} else if($bin_opcode[$i][0]=='000000'||$bin_opcode[$i][0]=='011001') {
 			// DADDIU AND R TYPE
@@ -1028,6 +1152,7 @@ class Simulate extends CI_Controller {
 			//echo $this->simulate[$cycle][16].'<br/>';
 			// ASSIGN NEW VALUE TO REGISTER
 			$this->R[bindec($bin_opcode[$i][3])] = $this->simulate[$cycle][16];
+			$this->R['mod'][bindec($bin_opcode[$i][3])] = TRUE;
 		} else {
 			// SD, J, and BEQZ
 			$this->simulate[$cycle][16] = 'N/A';
@@ -1042,18 +1167,27 @@ class Simulate extends CI_Controller {
 					case 0:
 
 						$this->mem[hexdec($starting)] = $foo;
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
 						break;
 					case 1:
 
 						$foo  = str_split($foo,2);
 						$this->mem[hexdec($starting)] = $foo[0];
 						$this->mem[hexdec($starting+1)] = $foo[1];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
 						break;
 					case 2:
 						$foo  = str_split($foo,2);
 						$this->mem[hexdec($starting)] = $foo[0];
 						$this->mem[hexdec($starting+1)] = $foo[1];
 						$this->mem[hexdec($starting+2)] = $foo[2];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
 						break;
 					case 3:
 						$foo  = str_split($foo,2);
@@ -1061,6 +1195,11 @@ class Simulate extends CI_Controller {
 						$this->mem[hexdec($starting+1)] = $foo[1];
 						$this->mem[hexdec($starting+2)] = $foo[2];
 						$this->mem[hexdec($starting+3)] = $foo[3];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
+						$this->mem['mod'][hexdec($starting+3)] = TRUE;
 						break;
 					case 4:
 						$foo  = str_split($foo,2);
@@ -1069,6 +1208,12 @@ class Simulate extends CI_Controller {
 						$this->mem[hexdec($starting+2)] = $foo[2];
 						$this->mem[hexdec($starting+3)] = $foo[3];
 						$this->mem[hexdec($starting+4)] = $foo[4];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
+						$this->mem['mod'][hexdec($starting+3)] = TRUE;
+						$this->mem['mod'][hexdec($starting+4)] = TRUE;
 						break;
 					case 5:
 						$foo  = str_split($foo,2);
@@ -1078,6 +1223,13 @@ class Simulate extends CI_Controller {
 						$this->mem[hexdec($starting+3)] = $foo[3];
 						$this->mem[hexdec($starting+4)] = $foo[4];
 						$this->mem[hexdec($starting+5)] = $foo[5];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
+						$this->mem['mod'][hexdec($starting+3)] = TRUE;
+						$this->mem['mod'][hexdec($starting+4)] = TRUE;
+						$this->mem['mod'][hexdec($starting+5)] = TRUE;
 						break;
 					case 6:
 						$foo  = str_split($foo,2);
@@ -1088,6 +1240,14 @@ class Simulate extends CI_Controller {
 						$this->mem[hexdec($starting+4)] = $foo[4];
 						$this->mem[hexdec($starting+5)] = $foo[5];
 						$this->mem[hexdec($starting+6)] = $foo[6];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
+						$this->mem['mod'][hexdec($starting+3)] = TRUE;
+						$this->mem['mod'][hexdec($starting+4)] = TRUE;
+						$this->mem['mod'][hexdec($starting+5)] = TRUE;
+						$this->mem['mod'][hexdec($starting+5)] = TRUE;
 						break;
 					case 7:
 						$foo  = str_split($foo,2);
@@ -1099,6 +1259,15 @@ class Simulate extends CI_Controller {
 						$this->mem[hexdec($starting+5)] = $foo[5];
 						$this->mem[hexdec($starting+6)] = $foo[6];
 						$this->mem[hexdec($starting+7)] = $foo[7];
+
+						$this->mem['mod'][hexdec($starting)] = TRUE;
+						$this->mem['mod'][hexdec($starting+1)] = TRUE;
+						$this->mem['mod'][hexdec($starting+2)] = TRUE;
+						$this->mem['mod'][hexdec($starting+3)] = TRUE;
+						$this->mem['mod'][hexdec($starting+4)] = TRUE;
+						$this->mem['mod'][hexdec($starting+5)] = TRUE;
+						$this->mem['mod'][hexdec($starting+6)] = TRUE;
+						$this->mem['mod'][hexdec($starting+7)] = TRUE;
 						break;
 				}
 

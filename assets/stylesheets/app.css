@@ -7374,24 +7374,30 @@ table {
 
 /* line 140, ../sass/app.scss */
 .cycle {
+  border-collapse: separate !important;
   text-transform: uppercase;
 }
-/* line 142, ../sass/app.scss */
+/* line 143, ../sass/app.scss */
 .cycle .title {
   width: 20px;
   padding-left: 15px;
 }
-/* line 147, ../sass/app.scss */
+/* line 148, ../sass/app.scss */
 .cycle td:nth-child(2), .cycle td:nth-child(3) {
   font-size: 12px;
 }
-/* line 150, ../sass/app.scss */
+/* line 151, ../sass/app.scss */
 .cycle td {
   height: 30px;
 }
 
-/* line 155, ../sass/app.scss */
-.opcodes, .pipeline, .cycle {
-  border-bottom: 5px solid #d7d7d7;
+/* line 156, ../sass/app.scss */
+.opcodes, .pipeline, .section-container {
+  border-bottom: 5px solid #d7d7d7 !important;
   border-collapse: separate !important;
+}
+
+/* line 163, ../sass/app.scss */
+.sub {
+  border-bottom: none !important;
 }
