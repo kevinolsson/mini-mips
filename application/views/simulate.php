@@ -573,7 +573,7 @@
 
 		<div class="row">
 			<div class="large-3 columns">
-				<?php echo form_submit(array('class'=>'simulate','value'=>'Simulate!')); ?>
+				<a class="back" href="<?php echo base_url(); ?>">Back to CLI</a>
 			</div>
 			<div class="large-9 columns">
 				<div class="footer">

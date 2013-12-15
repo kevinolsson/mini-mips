@@ -64,7 +64,8 @@ class Simulate extends CI_Controller {
 
 		}
 
-		goto error;
+		//$error = 'hello';
+		//goto error;
 
 		// $this->R[] - GLOBAL REGISTER FOR INSIDE
 		// $this->mem[] - GLOBAL MEMORY FOR INSIDE
@@ -130,9 +131,13 @@ class Simulate extends CI_Controller {
 				// ASSIGN TO REGISTER VARIABLE
 				$this->R[substr($result[0],1)] = $result[1];
 				$this->R['mod'][substr($result[0],1)] = TRUE; 
-				//echo $this->R[substr($result[0],1)];
+				//echo substr($result[0],1);
 				// THE R VALUE (GOOD FOR ERROR CHECKING)
-				//echo substr($result[0],0,1);
+
+				if((substr($result[0],1)<1)||(substr($result[0],1)>31)) {
+					 $error = 'You are only allowed to have registers from R1 to R31.';
+					 goto error;
+				}
 
 			} else if(substr($result,2,2)=='0X'||substr($result,2,2)=='0x') {
 				//$result=preg_replace('/\s+/', '',  $result);
@@ -143,6 +148,11 @@ class Simulate extends CI_Controller {
 				$this->mem[hexdec($result[0])] = $result[1];
 				$this->mem['mod'][hexdec($result[0])] = TRUE;
 				//echo $this->mem[hexdec($result[0])].'<br/>';
+
+				if((hexdec($result[0])<4096)||(hexdec($result[0]))>8191) {
+					 $error = 'You are only allowed to allocate memory from 1000 to 1FFF.';
+					 goto error;
+				}
 			}
 		}
 
@@ -167,6 +177,17 @@ class Simulate extends CI_Controller {
 		$branch = null;// this is true, since all memory starts at 0
 
 		// Trim last ; from instructions
+
+		if($_POST['instructions']==''||$_POST['instructions']==' ') {
+			 $error = 'You must enter a set of instructions!';
+			 goto error;
+		}
+
+		if(substr($_POST['instructions'],-1)!=';') {
+			 $error = "Your instructions must end with a ';'";
+			 goto error;
+		}
+
 		$instructions = trim($_POST['instructions']);
 		$instructions = substr_replace($instructions, "", -1);
 
@@ -199,6 +220,8 @@ class Simulate extends CI_Controller {
 						}
 						// Assign the opcode to the beqz istruction. Its been waiting.
 						$opcode[$BEQZ_FLAG[1]][3] = $x;
+
+						$BEQZ_FLAG[4] = FALSE;
 					}
 				}
 
@@ -210,6 +233,8 @@ class Simulate extends CI_Controller {
 							$x = $x/4;
 						}
 						$opcode[$J_FLAG[1]][1] = $x;
+
+						$J_FLAG[4] = FALSE;
 					}
 				}
 
@@ -270,6 +295,10 @@ class Simulate extends CI_Controller {
 					$opcode[$counter][0] = 2;
 					$type[$counter] = 'J';
 					break;
+				default: 
+					$error = 'You have entered an invalid instruction!';
+			 		goto error;
+			 		break;
 
 
 			}
@@ -280,6 +309,8 @@ class Simulate extends CI_Controller {
 
 				// Split parameters into individual entities 
 				$parameters = explode(",",$instruction[1]);
+
+
 
 				foreach($parameters as $parameter) {
 					//echo $parameter;
@@ -293,7 +324,17 @@ class Simulate extends CI_Controller {
 						// Generate to => RS(5) RT(5) RD(5) (5) Func(6)
 						
 						// Trim R from the variable
+						if(substr($parameter,0,1)!='R'){
+							$error = 'There is something wrong with your syntax!';
+					 		goto error;
+						}
+
 						$parameter = substr($parameter, 1);
+
+						if($parameter<0||$parameter>31) {
+							$error = 'You can only use registers from R0 to R31!';
+					 		goto error;
+						}
 
 						switch($counter2) {
 							case 0:
@@ -321,7 +362,18 @@ class Simulate extends CI_Controller {
 						switch($counter2) {
 							case 0:
 								// Trim R from fariable
+
+								if(substr($parameter,0,1)!='R'){
+									$error = 'There is something wrong with your syntax!';
+							 		goto error;
+								}
+
 								$parameter = substr($parameter, 1);
+
+								if($parameter<0||$parameter>31) {
+									$error = 'You can only use registers from R0 to R31!';
+							 		goto error;
+								}
 								// First loop, RT (or RD for DADDIU)
 								if ($instruction[0]=='BEQZ') {
 									$opcode[$counter][1] = $parameter;
@@ -342,14 +394,30 @@ class Simulate extends CI_Controller {
 								//	- DADDIU R2,R3, 1000
 								if ($instruction[0]=='BEQZ') {
 									$opcode[$counter][3] = 0; //temporary
+
+									if(substr($parameter,0,1)!='L') {
+										$error = 'There is something wrong with your syntax!';
+								 		goto error;
+									}
+
 									$BEQZ_FLAG[0] = substr($parameter, 1); //Should return the L register
 									$BEQZ_FLAG[1]  = $counter;
 									$BEQZ_FLAG[2]  = $address;
+									$BEQZ_FLAG[4]  = TRUE;
 								}
 								if($instruction[0] =='SD' ||$instruction[0] =='LD') {
 									if (strpos($parameter,'(') !== false) {
+
+
 		 								$opcode[$counter][1] = substr($parameter, 4);
 										$opcode[$counter][1] = strtr($opcode[$counter][1], array('(' => '', ')' => ''));
+
+										if(substr($opcode[$counter][1],0,1)!='R') {
+											$error = 'There is something wrong with your syntax!';
+									 		goto error;
+										}
+
+
 										$opcode[$counter][1] = substr($opcode[$counter][1], 1);
 										
 
@@ -360,7 +428,18 @@ class Simulate extends CI_Controller {
 									}
 								}
 								if($instruction[0] == 'DADDIU') {
+									if(substr($parameter,0,1)!='R') {
+											$error = 'There is something wrong with your syntax!';
+									 		goto error;
+									}
+
 									$opcode[$counter][1] = substr($parameter, 1);
+
+									if($opcode[$counter][1]<0||$opcode[$counter][1]>31) {
+										$error = 'You can only use registers from R0 to R31!';
+								 		goto error;
+									}
+
 								}
 								break;
 
@@ -376,22 +455,53 @@ class Simulate extends CI_Controller {
 						// Input => J L1
 						// Output => Offset(26) - Address of where Label is located / 4'
 						//$opcode[$counter][1] = 0;
+
 						$J_FLAG[0] = substr($parameter, 1);
 						$J_FLAG[1] = $counter;
 						$J_FLAG[2] = $address;
+
+						$J_FLAG[4] = TRUE;
 					}
 					$counter2++;
 				}
 			} // End of parameter generation
-
 			// $opcode[$counter][3] will look something like 1000 right now.
 			// We have to split that into 4 digits and convert each into binary.
 			if($instruction[0]=='DADDIU'||$instruction[0] =='SD'||$instruction[0] =='LD') {
+
+				if($instruction[0]=='DADDIU') {
+
+				} else {
+					if(hexdec($opcode[$counter][3])<4096||hexdec($opcode[$counter][3])>8191) {
+						$error = 'You can only use memory from 1000 to 1FFF!';
+						goto error;
+					}
+				}
+
+				if(strlen($opcode[$counter][3])!=4) {
+					$error = 'There is something wrong with your syntax!';
+					goto error;
+				}
+
 				$opcode[$counter][3] = str_split($opcode[$counter][3]);
 			}
 
 		$counter++;			
 		$address += 4;
+		}
+
+		if(isset($BEQZ_FLAG[4])) {
+			if($BEQZ_FLAG[4]==TRUE) {
+				$error = 'You have a BEQZ instruction, but no instruction to branch to!';
+				goto error;
+			}
+		}
+
+		if(isset($J_FLAG[4])) {
+			if($J_FLAG[4]==TRUE) {
+				$error = 'You have a J instruction, but no instruction to branch to!';
+				goto error;
+			}
 		}
 
 		// BUILD THE BINARY OF THE OPCODES
@@ -825,19 +935,28 @@ class Simulate extends CI_Controller {
 		$data['registers'] = $xR;
 		$data['memory'] = $xMEM;
 
+if (!isset($error)) {
 
 		$this->load->view('shared/header');
 		$this->load->view('simulate',$data);
 		$this->load->view('shared/footer');
 
+	} else {
 
-		error:
+	error:
 
-		$data['error'] = 'test';
-
+		$data['error'] = $error;
 		$this->load->view('shared/header');
 		$this->load->view('welcome_message',$data);
 		$this->load->view('shared/footer');
+
+	}
+
+
+
+		
+
+
 
 	}
 
@@ -895,11 +1014,13 @@ class Simulate extends CI_Controller {
 
 		// CHECK IF THIS INSTRUCTION HAS DEPDENCY
 
-		if($i==0) {
+		if($i==0||$type[$i]=='J') {
 			$this->dependency[$i] == FALSE; // FIRST INSTRUCTION never has dependencies
 		} else {
 			if($type[$i]=='R') {
-				if($type[$i-1]=='R') {
+				if($type[$i-1]=='J') {
+					$this->dependency[$i] = FALSE;
+				} else if($type[$i-1]=='R') {
 					if(bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][3])||bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][3])) {
 						$this->dependency[$i] = TRUE;
 					} else {
@@ -913,8 +1034,9 @@ class Simulate extends CI_Controller {
 					}
 				}
 			} else {
-
-				if($type[$i-1]=='R') {
+				if($type[$i-1]=='J') {
+					$this->dependency[$i] = FALSE;
+				} else if($type[$i-1]=='R') {
 					if(bindec($bin_opcode[$i][1])==bindec($bin_opcode[$i-1][3])||bindec($bin_opcode[$i][2])==bindec($bin_opcode[$i-1][3])) {
 						$this->dependency[$i] = TRUE;
 					} else {
