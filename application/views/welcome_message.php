@@ -22,7 +22,7 @@
 						'class'=>'command-line',
 						'spellcheck' => 'false',
 						'value' =>
-						'LD R1, 1000(R2);&#13;&#10;DADDIU R3, R0, #0003;&#13;&#10;DSUBU R5, R1, R3;&#13;&#10;SD R5, 1000(R7);'
+						'BEQZ R6, L1;&#13;&#10;LD R1, 1000(R2);&#13;&#10;DADDIU R3, R0, #0003;&#13;&#10;DSUBU R5, R1, R3;&#13;&#10;L1: SD R5, 1000(R7);'
 						)
 					);
 					 ?>

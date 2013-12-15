@@ -638,6 +638,8 @@ class Simulate extends CI_Controller {
 											);	
 										}
 
+										$this->dependency[$i] = FALSE;
+
 
 
 									} else {
@@ -676,7 +678,21 @@ class Simulate extends CI_Controller {
 							}
 						}
 					} else { // pipeline on top does not exist
+
+						if(!isset($complete[$i])&&isset($complete[$i-1])&&($complete[$i-1]==TRUE)&&$this->dependency[$i]==FALSE) {
+							$pipeline[$i][$cycle] = 'ID';
+							// Simulate ID
+							$this->simulate_id(
+								$cycle,
+								$hex_opcode,
+								$bin_opcode,
+								$type[$i],
+								$i
+							);
+						}
+
 						if($branch['flag']==TRUE) {
+
 							if(isset($complete[$i])||$FIN==TRUE){
 								// DO NOTHING
 							} else {
@@ -695,6 +711,10 @@ class Simulate extends CI_Controller {
 									);
 
 							}
+
+
+
+
 						} else {
 							if($FIN==TRUE) {
 								// do nothing
@@ -713,17 +733,6 @@ class Simulate extends CI_Controller {
 										$hex_opcode,
 										$bin_opcode,
 										$type,
-										$i
-									);
-								}
-								if(!isset($complete[$i])&&isset($complete[$i-1])&&($complete[$i-1]==TRUE)&&$this->dependency[$i]==FALSE) {
-									$pipeline[$i][$cycle] = 'ID';
-									// Simulate ID
-									$this->simulate_id(
-										$cycle,
-										$hex_opcode,
-										$bin_opcode,
-										$type[$i],
 										$i
 									);
 								}
