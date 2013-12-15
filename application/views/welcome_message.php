@@ -1,14 +1,10 @@
-	<div class="row">
-		<!--<div class="large-12 columns">
-			<h1>miniMIPS</h1>
-			<h5>A simplified MIPS64 processor simulator</h5>
-		</div>-->
-		
 		<?php if(isset($error)) { ?>
-		<div class="large-12 columns">
-			<p class="error">
-					<?php echo $error; ?>				
-			</p>
+		<div class="row">
+			<div class="large-12 columns">
+				<p class="error">
+						<?php echo $error; ?>				
+				</p>
+			</div>
 		</div>
 		<?php } ?>
 
@@ -40,10 +36,19 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="large-12 columns">
+			<div class="large-3 columns">
 				<?php echo form_submit(array('class'=>'simulate','value'=>'Simulate!')); ?>
+			</div>
+			<div class="large-9 columns">
+				<div class="footer">
+				<p>
+					<strong>MiniMips</strong> A simulator for a simplified MIPS64 processor. In partial fulfillment of the requirements for the subject 'Computer Architecture' at De La Salle University.
+				</p>
+				<p>
+					<strong>Members:</strong> Yosef Consolacion, Francis Gaddi, Joy Luville Mahinay, Kevin Olsson, Adrea Rufino, Celine Villafuerte</strong> 
+				</p>
+				</div>
 			</div>
 		</div>
 
 		<?php echo form_close(); ?>
-	</div>

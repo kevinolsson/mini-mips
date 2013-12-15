@@ -54,16 +54,25 @@
 // @import "foundation/components/tooltips";
 // @import "foundation/components/dropdown";
 
+h1 {
+	small {
+		color: $dark-grey;
+		font-size: 30px;
+	}
+}
+
 .row:first-child {
 	padding-top: 50px;
 }
 
 .error {
 	background-color: $red-light;
-	border: 1px solid $red;
+	//border: 1px solid $red;
 	margin-top: 20px;
 	color: $red;
 	padding: 10px;
+	margin-bottom: -30px;
+	border-bottom: 3px solid lighten($red,5%);
 }
 .command-line, .command-line2 {
 	margin-top: 20px;
@@ -162,4 +171,9 @@ table {
 
 .sub {
 	border-bottom: none !important;
+}
+
+.footer {
+	font-size: 12px;
+	color: lighten($dark-grey, 30%);
 }

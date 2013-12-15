@@ -55,6 +55,7 @@ class Simulate extends CI_Controller {
 	public function index()
 	{
 		$this->load->helper('url');
+		$this->load->helper('form');
 		//$this->load->vars($global);
 
 		if(!isset($_POST['instructions'])) {
@@ -62,6 +63,8 @@ class Simulate extends CI_Controller {
 			redirect(base_url());
 
 		}
+
+		goto error;
 
 		// $this->R[] - GLOBAL REGISTER FOR INSIDE
 		// $this->mem[] - GLOBAL MEMORY FOR INSIDE
@@ -71,6 +74,8 @@ class Simulate extends CI_Controller {
 
 
 		// MEMORY AND REGISTER INITIALIZATION
+
+		$xR = null;
 
 		for($i=4096;$i<=8191;$i++) {
 			if(!isset($this->mem[$i])) {
@@ -823,6 +828,15 @@ class Simulate extends CI_Controller {
 
 		$this->load->view('shared/header');
 		$this->load->view('simulate',$data);
+		$this->load->view('shared/footer');
+
+
+		error:
+
+		$data['error'] = 'test';
+
+		$this->load->view('shared/header');
+		$this->load->view('welcome_message',$data);
 		$this->load->view('shared/footer');
 
 	}

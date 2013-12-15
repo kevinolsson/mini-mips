@@ -449,7 +449,7 @@ body {
 /* line 300, ../../../../Ruby193/lib/ruby/gems/1.9.1/gems/zurb-foundation-4.3.2/scss/foundation/components/_global.scss */
 body {
   background: white;
-  color: #222222;
+  color: #313131;
   padding: 0;
   margin: 0;
   font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
@@ -2215,7 +2215,7 @@ abbr,
 acronym {
   text-transform: uppercase;
   font-size: 90%;
-  color: #222222;
+  color: #313131;
   border-bottom: 1px dotted #dddddd;
   cursor: help;
 }
@@ -7277,21 +7277,28 @@ a.th {
   max-width: 800px;
 }
 
-/* line 57, ../sass/app.scss */
+/* line 58, ../sass/app.scss */
+h1 small {
+  color: #313131;
+  font-size: 30px;
+}
+
+/* line 64, ../sass/app.scss */
 .row:first-child {
   padding-top: 50px;
 }
 
-/* line 61, ../sass/app.scss */
+/* line 68, ../sass/app.scss */
 .error {
   background-color: #ffb0b0;
-  border: 1px solid #eb4949;
   margin-top: 20px;
   color: #eb4949;
   padding: 10px;
+  margin-bottom: -30px;
+  border-bottom: 3px solid #ee6060;
 }
 
-/* line 68, ../sass/app.scss */
+/* line 77, ../sass/app.scss */
 .command-line, .command-line2 {
   margin-top: 20px;
   height: 370px;
@@ -7304,17 +7311,17 @@ a.th {
   border-bottom: 5px solid #181818;
   border-top: 10px solid #b1b1b1;
 }
-/* line 80, ../sass/app.scss */
+/* line 89, ../sass/app.scss */
 .command-line:hover, .command-line:focus, .command-line2:hover, .command-line2:focus {
   background: #313131;
 }
 
-/* line 85, ../sass/app.scss */
+/* line 94, ../sass/app.scss */
 .command-line2 {
   font-size: 13px !important;
 }
 
-/* line 90, ../sass/app.scss */
+/* line 99, ../sass/app.scss */
 .simulate, .back {
   width: 200px;
   height: 60px;
@@ -7325,79 +7332,85 @@ a.th {
   font-size: 25px !important;
   text-transform: uppercase;
 }
-/* line 100, ../sass/app.scss */
+/* line 109, ../sass/app.scss */
 .simulate:hover, .back:hover {
   background: #23ed66;
 }
 
-/* line 105, ../sass/app.scss */
+/* line 114, ../sass/app.scss */
 .back {
   line-height: 55px;
   display: inline-block;
   text-align: center;
   margin-top: 5px;
 }
-/* line 111, ../sass/app.scss */
+/* line 120, ../sass/app.scss */
 .back:hover {
   color: #fff;
   background: #23ed66;
 }
 
-/* line 117, ../sass/app.scss */
+/* line 126, ../sass/app.scss */
 table {
   width: 100%;
   margin-top: 20px;
 }
 
-/* line 122, ../sass/app.scss */
+/* line 131, ../sass/app.scss */
 .opcodes, .cycle {
   text-transform: uppercase;
 }
-/* line 124, ../sass/app.scss */
+/* line 133, ../sass/app.scss */
 .opcodes th, .cycle th {
   text-align: left;
 }
 
-/* line 129, ../sass/app.scss */
+/* line 138, ../sass/app.scss */
 .pipeline {
   text-transform: uppercase;
   font-size: 11px;
 }
-/* line 132, ../sass/app.scss */
+/* line 141, ../sass/app.scss */
 .pipeline th, .pipeline td {
   text-align: left;
 }
-/* line 135, ../sass/app.scss */
+/* line 144, ../sass/app.scss */
 .pipeline a {
   color: #313131;
 }
 
-/* line 140, ../sass/app.scss */
+/* line 149, ../sass/app.scss */
 .cycle {
   border-collapse: separate !important;
   text-transform: uppercase;
 }
-/* line 143, ../sass/app.scss */
+/* line 152, ../sass/app.scss */
 .cycle .title {
   width: 20px;
   padding-left: 15px;
 }
-/* line 148, ../sass/app.scss */
+/* line 157, ../sass/app.scss */
 .cycle td:nth-child(2), .cycle td:nth-child(3) {
   font-size: 12px;
 }
-/* line 151, ../sass/app.scss */
+/* line 160, ../sass/app.scss */
 .cycle td {
   height: 30px;
 }
 
-/* line 156, ../sass/app.scss */
+/* line 165, ../sass/app.scss */
 .opcodes, .pipeline, .section-container {
   border-bottom: 5px solid #d7d7d7 !important;
   border-collapse: separate !important;
 }
 
-/* line 163, ../sass/app.scss */
+/* line 172, ../sass/app.scss */
 .sub {
   border-bottom: none !important;
+}
+
+/* line 176, ../sass/app.scss */
+.footer {
+  font-size: 12px;
+  color: #7e7e7e;
 }

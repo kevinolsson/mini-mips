@@ -571,9 +571,19 @@
 </div>
 </div>
 
-<div class="row">
-	<div class="large-12 columns">
-		<a class="back" href="<?php echo base_url(); ?>">Back to CLI</a>
-	</div>
-</div>
+		<div class="row">
+			<div class="large-3 columns">
+				<?php echo form_submit(array('class'=>'simulate','value'=>'Simulate!')); ?>
+			</div>
+			<div class="large-9 columns">
+				<div class="footer">
+				<p>
+					<strong>MiniMips</strong> A simulator for a simplified MIPS64 processor. In partial fulfillment of the requirements for the subject 'Computer Architecture' at De La Salle University.
+				</p>
+				<p>
+					<strong>Members:</strong> Yosef Consolacion, Francis Gaddi, Joy Luville Mahinay, Kevin Olsson, Adrea Rufino, Celine Villafuerte
+				</p>
+				</div>
+			</div>
+		</div>
 <br/><br/>
