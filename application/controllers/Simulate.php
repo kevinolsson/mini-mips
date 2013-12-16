@@ -190,6 +190,7 @@ class Simulate extends CI_Controller {
 
 		$instructions = trim($_POST['instructions']);
 		$instructions = substr_replace($instructions, "", -1);
+		$instructions = strtoupper($instructions);
 
 		// STEP 1 -- Generate the OPCODES per functions
 		$instructions = explode(";",$instructions);
@@ -677,7 +678,7 @@ class Simulate extends CI_Controller {
 				} else {
 					// block to the left does not exist
 					if(isset($pipeline[$i-1][$cycle])) {
-						if($branch['flag']==TRUE){
+						if($branch['flag']==TRUE&&$this->dependency[$branch['i']]==FALSE){
 						// If BRANCH is true
 							switch($pipeline[$i-1][$cycle]) {
 								// Insert next instruction
@@ -703,45 +704,62 @@ class Simulate extends CI_Controller {
 									// do nothing
 									break;
 								case 'WB':
+									if(!isset($branch[$i])){
+										if($this->COND==1) {
+											// JUMP TO NEW $i
+											// TURN OFF BRANCH 
+											// determine what the new $i is based of $branch['new']
+											if($branch['i']==0){
+												$new = ($i - $branch['i'])+$branch['new'];
+											} else {
+												$new = ($i - $branch['i'])+$branch['new']+$branch['i'];
+											}	
+											
+											while($i!=$new) {
+												$complete[$i] = TRUE;
+												$i++;
+											}
+											$i = $new;
 
-									if($this->COND==1) {
-										// JUMP TO NEW $i
-										// TURN OFF BRANCH 
-										
+											if(isset($pipeline[$i][$cycle-1])&&$pipeline[$i][$cycle-1]=='IF') {
 
-										// determine what the new $i is based of $branch['new']
-										if($branch['i']==0){
-											$new = ($i - $branch['i'])+$branch['new'];
+												$pipeline[$i][$cycle] = 'ID';
+												// Simulate ID
+												$this->simulate_id(
+													$cycle,
+													$hex_opcode,
+													$bin_opcode,
+													$type[$i],
+													$i
+												);
+
+													$this->COND = 0;
+													$branch['flag'] = false;
+													$branch['jump'] = false;
+													$branch['new'] = null;
+													$branch['i'] = null;
+													$signal = false;
+
+											} else {
+												$pipeline[$i][$cycle] = 'IF';
+												// Simulate IF
+												$this->simulate_if(
+													$cycle,
+													$hex_opcode,
+													$bin_opcode,
+													$type,
+													$i
+												);	
+											}
+
+											$this->dependency[$i] = FALSE;
+
+
+
 										} else {
-											$new = ($i - $branch['i'])+$branch['new']+$branch['i'];
-										}	
-										
-										while($i!=$new) {
-											$complete[$i] = TRUE;
-											$i++;
-										}
-										$i = $new;
+											if($branch['i']==$i){
 
-										if(isset($pipeline[$i][$cycle-1])&&$pipeline[$i][$cycle-1]=='IF') {
-
-											$pipeline[$i][$cycle] = 'ID';
-											// Simulate ID
-											$this->simulate_id(
-												$cycle,
-												$hex_opcode,
-												$bin_opcode,
-												$type[$i],
-												$i
-											);
-
-												$this->COND = 0;
-												$branch['flag'] = false;
-												$branch['jump'] = false;
-												$branch['new'] = null;
-												$branch['i'] = null;
-												$signal = false;
-
-										} else {
+											} else {
 											$pipeline[$i][$cycle] = 'IF';
 											// Simulate IF
 											$this->simulate_if(
@@ -750,28 +768,17 @@ class Simulate extends CI_Controller {
 												$bin_opcode,
 												$type,
 												$i
-											);	
+											);
+											}
+
 										}
 
-										$this->dependency[$i] = FALSE;
-
-
-
+										// TURN OFF BRANCH
+										$signal = true;
 									} else {
-										// If we are not going to jump
-										$pipeline[$i][$cycle] = 'IF';
-										// Simulate IF
-										$this->simulate_if(
-											$cycle,
-											$hex_opcode,
-											$bin_opcode,
-											$type,
-											$i
-										);
+										// do nothing
 									}
 
-									// TURN OFF BRANCH
-									$signal = true;
 									break;
 							}
 						} else {
@@ -806,7 +813,7 @@ class Simulate extends CI_Controller {
 							);
 						}
 
-						if($branch['flag']==TRUE) {
+						if($branch['flag']==TRUE&&$this->dependency[$branch['i']]==FALSE) {
 
 							if(isset($complete[$i])||$FIN==TRUE){
 								// DO NOTHING
@@ -885,6 +892,10 @@ class Simulate extends CI_Controller {
 			}
 			$FIN = false;
 			$cycle++;
+
+			// if($cycle==10) {
+			// 	$complete[$counter-1]=true;
+			// }
 				
 		}
 
