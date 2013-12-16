@@ -669,9 +669,10 @@ class Simulate extends CI_Controller {
 									$i
 								);
 								$complete[$i] = TRUE;
-								$this->dependency[$i+1] = FALSE;								//echo $name[$i].' is complete! - '.$i.' '.$cycle.'<br/>';
+															//echo $name[$i].' is complete! - '.$i.' '.$cycle.'<br/>';
 								break;
 							case 'WB':
+								$this->dependency[$i+1] = FALSE;	
 								break;
 						}
 					}
@@ -704,7 +705,8 @@ class Simulate extends CI_Controller {
 									// do nothing
 									break;
 								case 'WB':
-									if(!isset($branch[$i])){
+									if(!isset($lol)){
+
 										if($this->COND==1) {
 											// JUMP TO NEW $i
 											// TURN OFF BRANCH 
@@ -772,7 +774,6 @@ class Simulate extends CI_Controller {
 											}
 
 										}
-
 										// TURN OFF BRANCH
 										$signal = true;
 									} else {
@@ -818,19 +819,32 @@ class Simulate extends CI_Controller {
 							if(isset($complete[$i])||$FIN==TRUE){
 								// DO NOTHING
 							} else {
-								$pipeline[$i][$cycle] = 'IF';
-								if($branch['flag']==FALSE) {
-									// check for branch
-									$branch = $this->ifbranch($opcode,$bin_opcode,$i);
-								}
-									// Simulate IF
-									$this->simulate_if(
+								if($i==$branch['i']) {
+									$pipeline[$i][$cycle] = 'ID';
+									// Simulate ID
+									$this->simulate_id(
 										$cycle,
 										$hex_opcode,
 										$bin_opcode,
-										$type,
+										$type[$i],
 										$i
 									);
+								} else {
+									$pipeline[$i][$cycle] = 'IF';
+									if($branch['flag']==FALSE) {
+										// check for branch
+										$branch = $this->ifbranch($opcode,$bin_opcode,$i);
+									}
+										// Simulate IF
+										$this->simulate_if(
+											$cycle,
+											$hex_opcode,
+											$bin_opcode,
+											$type,
+											$i
+										);
+								}
+
 
 							}
 
