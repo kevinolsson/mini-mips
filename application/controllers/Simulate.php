@@ -621,7 +621,7 @@ class Simulate extends CI_Controller {
 			for($i=0;$i<$counter;$i++) {
 				//echo $i.' '.$cycle.'<br/>';
 				if(isset($pipeline[$i][$cycle-1])) { // If block to the left is set
-					if(($branch['flag']==TRUE&&$i==$branch['i'])||$branch['flag']==FALSE) {
+					if(($branch['flag']==TRUE&&$i<=$branch['i'])||$branch['flag']==FALSE) {
 						switch($pipeline[$i][$cycle-1]) {							
 							// Insert next instruction
 							// CALL EXECUTION HERE LATER ON!;
@@ -1015,7 +1015,7 @@ if (!isset($error)) {
 		// CHECK IF THIS INSTRUCTION HAS DEPDENCY
 
 		if($i==0||$type[$i]=='J') {
-			$this->dependency[$i] == FALSE; // FIRST INSTRUCTION never has dependencies
+			$this->dependency[$i] = FALSE; // FIRST INSTRUCTION never has dependencies
 		} else {
 			if($type[$i]=='R') {
 				if($type[$i-1]=='J') {
